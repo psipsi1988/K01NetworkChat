@@ -24,7 +24,7 @@ public class MultiServer {
 			serverSocket = new ServerSocket(9999);
 			System.out.println("서버가 시작되었습니다. ");
 			
-			//... 접속 대기중...
+			//... 접속 대기중.....
 			
 			//클라이언트가 접속요청을 하면 accept()메소드를 통해 받아들인다. 
 			
