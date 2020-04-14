@@ -11,6 +11,7 @@ public class MultiClient {
 		System.out.println("이름을 입력하세요:");
 		Scanner scanner = new Scanner(System.in);
 		String s_name = scanner.nextLine();
+	
 		
 		//Sender가 기능을 가져가므로 여기서는 필요 없음
 		//PrintWriter out = null;
