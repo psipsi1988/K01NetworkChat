@@ -19,6 +19,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+/*
+ 귓속말 고정 상태에서 리스트 출력
+귓속말 대상 없으면 오류 메시지 출력
+본인에게 귓속말 못하게 설정
+
+ */
 public class MultiServer {
 
 	PreparedStatement psmt;
