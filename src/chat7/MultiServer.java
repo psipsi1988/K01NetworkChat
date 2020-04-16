@@ -7,18 +7,23 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.StringTokenizer;
 
 public class MultiServer {
 
-
+	PreparedStatement psmt;
+	Connection con;
+	ResultSet rs;
 
 	static ServerSocket serverSocket = null;
 	static Socket socket = null;
@@ -39,6 +44,28 @@ public class MultiServer {
 	public void init() {
 		
 		try {
+			try {
+				Class.forName("oracle.jdbc.OracleDriver");
+				con = DriverManager.getConnection
+						("jdbc:oracle:thin://@localhost:1521:orcl", 
+								"kosmo","1234"
+						);
+				System.out.println("오라클 DB 연결성공");
+
+				
+			}
+			catch (ClassNotFoundException e) {
+				System.out.println("오라클 드라이버 로딩 실패");
+				e.printStackTrace();
+			}
+			catch (SQLException e) {
+				System.out.println("DB 연결 실패");
+				e.printStackTrace();
+			}
+			catch (Exception e) {
+				System.out.println("알수 없는 예외 발생");
+			}
+			
 			serverSocket = new ServerSocket(9999);
 			System.out.println("서버가 시작되었습니다. ");
 
@@ -79,8 +106,34 @@ public class MultiServer {
 	}
 
 
-//////***********************************//////////////////////////
-	public void secretMsg(String name, String msg) {
+	//귓속말
+	public void secretMsg(String from_name, String to_name, String to_content) {
+		Iterator<String> it = clientMap.keySet().iterator();
+
+		while (it.hasNext()) {
+			String user = it.next();
+			
+			try {
+				PrintWriter it_out = (PrintWriter)
+						clientMap.get(user);
+						//clientMap.get(it.next());
+						//clientMap.get(name);
+				
+				if(to_name.equals(user)) {
+					it_out.println("["+from_name+"] 님이 보낸 메시지:"+to_content);
+				}
+				
+			}
+			catch (Exception e) {
+				System.out.println("예외:444444"+ e);
+			}
+		}
+		
+	}
+	
+	
+	// /만 입력한 접속자에게 명령어 종류 알려주기
+	public void iMsg(String name, String msg) {
 		Iterator<String> it = clientMap.keySet().iterator();
 
 		
@@ -88,25 +141,19 @@ public class MultiServer {
 			PrintWriter list_out = (PrintWriter)
 					//clientMap.get(it.next());
 					clientMap.get(name);
+			list_out.println("명령어를 입력하세요. ");
+			list_out.println("[/list] 리스트 보기");
+			list_out.println("[/to 아이디] 귓속말 보내기 고정");
+			list_out.println("[/to 아이디 메시지] 귓속말 한 번 보내기");
 			
-			list_out.println("-------------L I S T-------------");
-			list_out.println(clientMap.size()+"명 접속중입니다. ");
-			list_out.println("[접속자 대화명]="+clientMap.keySet());
-			list_out.println("---------------------------------");
 		}
 		catch (Exception e) {
-			System.out.println("예외:"+ e);
+			System.out.println("예외:55555"+ e);
 		}
 	}
 	
 	
-	
-	
-	
-	
-	
-	
-///////*********************************************//////////////////list를 검색한 클라이언트에게 list를 전달하는 메소드
+	//list를 검색한 클라이언트에게 list를 전달하는 메소드
 	public void listMsg(String name, String msg) {
 		Iterator<String> it = clientMap.keySet().iterator();
 
@@ -117,16 +164,19 @@ public class MultiServer {
 					clientMap.get(name);
 			
 			list_out.println("-------------L I S T-------------");
-			list_out.println(clientMap.size()+"명 접속중입니다. ");
+			list_out.println("-------"+clientMap.size()+"명 접속중입니다. -------");
 			list_out.println("[접속자 대화명]="+clientMap.keySet());
 			list_out.println("---------------------------------");
 	
 			
 		}
 		catch (Exception e) {
-			System.out.println("예외:"+ e);
+			System.out.println("예외:66666"+ e);
+			
 		}
 	}
+	
+	
 	
 	
 	
@@ -158,7 +208,7 @@ public class MultiServer {
 				}
 			}
 			catch (Exception e) {
-				System.out.println("예외:" + e);
+				System.out.println("예외:77777" + e);
 			}
 		}
 	}
@@ -180,7 +230,7 @@ public class MultiServer {
 
 			}
 			catch (Exception e) {
-				System.out.println("예외:" + e); 
+				System.out.println("예외11111:" + e); 
 			}
 
 		}
@@ -198,9 +248,6 @@ public class MultiServer {
 
 			//메시지 저장용 변수
 			String s= "";
-			
-			//귓속말 보낼 대화명 저장할 변수
-			String s_name = "";
 		
 			try {
 				//클라이언트의 이름을 읽어와서 저장
@@ -222,53 +269,121 @@ public class MultiServer {
 				//입력한 메시지는 모든 클라이언트에게 Echo된다.  
 				while(in !=null) {
 					
-					StringTokenizer token = new StringTokenizer(s);
 					s = in.readLine();
 					s = URLDecoder.decode(s, "UTF-8");
+					
 					if(s==null) {
 						break;
 					}
-
+					//Iterator<String> toIt = clientMap.keySet().iterator();
 					try {
 						if(s.charAt(0)=='/') {
-							System.out.println("/ 입력함 명령어 접근");
 							
-
-						
-						
-							if(s.equals("/list")) {
-								System.out.println(name+" 접속 리스트 확인");
-								listMsg(name, s);
-								continue;
+							// /만 입력했을 때
+							if(s.equals("/")) {
+								iMsg(name, s);
+									continue;
 							}
 							
+							//리스트 확인
+							if(s.equals("/list")) {
+								//	System.out.println(name+" 접속 리스트를 확인했습니다. ");
+									listMsg(name, s);
+									continue;
+								}
+
+							//귓속말
+							if(s.substring(1, 3).equals("to") && s.substring(2, 4).equals("o ")) {
+								
+								String[] sArr = s.split(" ");
+							
+								
+								//아이디를 입력하지 않았을 때 
+								if(sArr.length==1) {
+									out.println("귓속말 대상을 입력하세요.");
+									continue;
+								}
+								
+								String to_name = sArr[1];
+								String to_content = "";
+								
+								
+								if(sArr.length==2) {
+									out.println(to_name+"님에게 귓속말이 고정되었습니다. ");
+									out.println("고정 해제 = x");
+
+									while(true) {
+										to_content=in.readLine();
+										
+										if(to_content.equalsIgnoreCase("x")) {
+											out.println("고정 귓속말 해제 - 모두에게 메시지가 전송됩니다.");
+											break;
+										}
+										
+										
+										if(sArr[1]==name) {
+											out.print("테스트테스트테스트");
+										}
+									
+										
+										// /만 입력했을 때
+										if(to_content.equals("/")) {
+											out.println("/ 입력했을 때 ");
+											iMsg(name, to_content);
+											continue;
+										}
+
+										//리스트 확인
+										if(to_content.equals("/list")) {
+											//	System.out.println(name+" 접속 리스트를 확인했습니다. ");
+											out.println("/list입력했을 때 ");
+											listMsg(name, to_content);
+											continue;
+										}
+										
+										
+										
+										secretMsg(name, to_name, to_content);
+									}
+								}
+								
+								
+								if(sArr.length >= 3) {
+									for (int i = 2; i<sArr.length; i++) {
+										to_content += " " + sArr[i]; 
+									}
+									secretMsg(name, to_name, to_content);
+								}
+							}
+							else if(s.startsWith("/")) {
+								out.println("명령어를 잘못 입력하셨습니다. ");
+							}
+							continue;
 						}
 						
 					}
 					catch (Exception e) {
-						System.out.println("예외:"+e);
+				//		System.out.println("예외:22222"+e);
 					}
+					String query = "INSERT INTO chating_tb VALUES "
+							+ " (seq_chating.nextval, ? , sysdate, ? )";
+					psmt = con.prepareStatement(query);
 					
+					psmt.setString(1, name);
+					psmt.setString(2, s);
+					psmt.executeUpdate();
 					
+					//System.out.print(time1+" [");
 					System.out.print(time1+" [");
 					System.out.println(name + "] " + s);
 			
-					//System.out.println(clientMap.keySet()); //[3번, 2번, 1번]
-					//System.out.println(clientMap.containsValue(name)); //false
 
-					//System.out.println(clientMap.values());
-					//[java.io.PrintWriter@22109270, java.io.PrintWriter@2cd76842, java.io.PrintWriter@28e8f900]
-				
-					//System.out.println("테스트"+clientMap.keySet()+"테스트");
-					//System.out.println("테스트"+clientMap.toString()+"테스트");
-					//System.out.println("테스트"+clientMap.containsKey(name)+"테스트");
-					//System.out.println("테스트"+clientMap.equals(name)+"테스트");
 					sendAllMsg(name, s);
 				
 				}
 			}
 			catch (Exception e) {
-				System.out.println("예외:"+e);
+				System.out.println("예외:333333"+e);
 			}
 			finally {
 				/*
@@ -287,6 +402,9 @@ public class MultiServer {
 					in.close();
 					out.close();
 					socket.close();
+					if(psmt != null) psmt.close();
+					if(con != null) con.close();
+					if(rs != null) rs.close();
 				}
 				catch (Exception e) {
 					e.printStackTrace();

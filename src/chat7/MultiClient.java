@@ -1,25 +1,35 @@
 package chat7;
 
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Scanner;
 
 public class MultiClient {
 
+	
 	public static void main(String[] args) {
 		
+		String s_name = null;
+		while( true ) {
+			
+	
 		System.out.println("이름을 입력하세요:");
 		Scanner scanner = new Scanner(System.in);
-		String s_name = scanner.nextLine();
-	
+		s_name = scanner.nextLine();
+        if (s_name.isEmpty() == false ) {
+            break;
+        }
+
+        System.out.println("대화명은 한 글자 이상 입력해야 합니다.\n");
 		
 		//Sender가 기능을 가져가므로 여기서는 필요 없음
 		//PrintWriter out = null;
 		
 		//리시버가 기능을 가져가므로 여기서는 필요 없음
 		//BufferedReader in = mull;
-		
+		}
 		try {
+			
+			
 			String ServerIP = "localhost";
 			if(args.length > 0) {
 				ServerIP = args[0];

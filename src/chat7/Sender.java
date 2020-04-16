@@ -33,7 +33,7 @@ public class Sender extends Thread {
 		try {
 			//클라이언트가 입력한 "대화명"을 서버로 전송한다. 
 			out.println(URLEncoder.encode(name, "UTF-8"));
-			
+	
 			//Q를 입력하기 전까지의 메시지를 서버로 전송한다. 
 			while(out !=null) {
 				try {
